@@ -1,0 +1,17 @@
+{
+  "name": "Leion Control Center",
+  "version": "0.1.0",
+  "description": "Dashboard, workflows et agents pour le MCP server leion-os.",
+  "mcp_servers": {
+    "leion-os": {
+      "type": "http",
+      "url": "https://mcp.neomind.club"
+    }
+  },
+  "ui": {
+    "main_widget": {
+      "entrypoint": "app/web/dist/component.js",
+      "root_dom_id": "root"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+[project]
+name = "leion_mcp"
+version = "0.1.0"
+
+dependencies = [
+    "fastmcp>=2.13.1"
+]
+
+[project.optional-dependencies]
+# Phase D.0.2: Backend event streaming via Redis PubSub
+streaming = [
+    "redis[hiredis]>=7.1.0",
+    "structlog>=25.0.0"
+]
+
+[tool.setuptools]
+packages = ["leion_engine","tools", "utils", "servers", "services"]

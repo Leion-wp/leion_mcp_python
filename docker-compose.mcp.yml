@@ -1,0 +1,176 @@
+services:
+  mcp-router:
+    build: .
+    command: >
+      python servers/mcp_router.py
+      --transport http
+      --host 0.0.0.0
+      --port 7000
+    ports:
+      - "7000:7000"
+    volumes:
+      - D:/claude_code:/workspace
+    environment:
+      MCP_FS_URL: http://mcp-fs:7001/mcp
+      MCP_GIT_URL: http://mcp-git:7002/mcp
+      MCP_WORKFLOWS_URL: http://mcp-workflows:7003/mcp
+      MCP_MEMORY_URL: http://mcp-memory:7004/mcp
+      MCP_AGENTS_URL: http://mcp-agents:7005/mcp
+      MCP_INTEGRATIONS_URL: http://mcp-integrations:7006/mcp
+      MCP_DEV_QUALITY_URL: http://mcp-dev:7007/mcp
+      MCP_BUSINESS_URL: http://mcp-business:7008/mcp
+      MCP_UI_URL: http://mcp-ui:7009/mcp
+      MCP_CONTROL_CENTER_URL: http://mcp-cc:7010/mcp
+      MCP_WP_URL: http://mcp-wp:7012/mcp
+    depends_on:
+      - mcp-fs
+
+  mcp-fs:
+    build: .
+    command: >
+      python servers/mcp_fs.py
+      --transport http
+      --host 0.0.0.0
+      --port 7001
+    ports:
+      - "7001:7001"
+    volumes:
+      - D:/claude_code:/workspace
+    environment:
+      FS_ROOT: /workspace
+
+  mcp-git:
+    build: .
+    command: >
+      python servers/mcp_git_project.py
+      --transport http
+      --host 0.0.0.0
+      --port 7002
+    ports:
+      - "7002:7002"
+    volumes:
+      - D:/claude_code:/workspace
+
+  mcp-workflows:
+    build: .
+    command: >
+      python servers/mcp_workflows.py
+      --transport http
+      --host 0.0.0.0
+      --port 7003
+    ports:
+      - "7003:7003"
+    volumes:
+      - D:/claude_code:/workspace
+    environment:
+      WORKFLOW_RUNNER: local
+      WORKFLOW_DEFINITIONS_DIR: /workspace/leion-autobuilder/workflows/definitions
+      # Phase D.0: Backend/Redis access via Windows host network
+      REDIS_URL: redis://host.docker.internal:6379/0
+      BACKEND_URL: http://host.docker.internal:8001
+
+  mcp-memory:
+    build: .
+    command: >
+      python servers/mcp_memory.py
+      --transport http
+      --host 0.0.0.0
+      --port 7004
+    ports:
+      - "7004:7004"
+    volumes:
+      - D:/claude_code:/workspace
+    environment:
+      LEION_WORKSPACE_ROOT: /workspace/leion_workspace
+
+  mcp-agents:
+    build: .
+    command: >
+      python servers/mcp_agents.py
+      --transport http
+      --host 0.0.0.0
+      --port 7005
+    ports:
+      - "7005:7005"
+    volumes:
+      - D:/claude_code:/workspace
+
+  mcp-integrations:
+    build: .
+    command: >
+      python servers/mcp_integrations.py
+      --transport http
+      --host 0.0.0.0
+      --port 7006
+    ports:
+      - "7006:7006"
+    volumes:
+      - D:/claude_code:/workspace
+
+  mcp-dev:
+    build: .
+    command: >
+      python servers/mcp_dev_quality.py
+      --transport http
+      --host 0.0.0.0
+      --port 7007
+    ports:
+      - "7007:7007"
+    volumes:
+      - D:/claude_code:/workspace
+
+  mcp-business:
+    build: .
+    command: >
+      python servers/mcp_business.py
+      --transport http
+      --host 0.0.0.0
+      --port 7008
+    ports:
+      - "7008:7008"
+    volumes:
+      - D:/claude_code:/workspace
+
+  mcp-ui:
+    build: .
+    command: >
+      python servers/mcp_ui.py
+      --transport http
+      --host 0.0.0.0
+      --port 7009
+    ports:
+      - "7009:7009"
+    volumes:
+      - D:/claude_code:/workspace
+
+  mcp-cc:
+    build: .
+    command: >
+      python servers/mcp_control_center.py
+      --transport http
+      --host 0.0.0.0
+      --port 7010
+    ports:
+      - "7010:7010"
+    volumes:
+      - D:/claude_code:/workspace
+  mcp-wp:
+    build: .
+    command: >
+      python servers/mcp_wp.py
+      --transport http
+      --host 0.0.0.0
+      --port 7012
+    ports:
+      - "7012:7012"
+    volumes:
+      - D:/claude_code/wp:/workspace
+    environment:
+      WP_BASE_URL: https://soulskeeper.fr
+      WP_USER: MatthieuSchwaig
+      WP_APP_PASSWORD: vmlDvRKPIrg1cGvawPaaQauF
+
+
+# Phase D.0: Separate network (2-stack architecture)
+# MCP accesses Backend/Redis via host.docker.internal (Windows)
+# No network merge - lifecycle independence maintained
