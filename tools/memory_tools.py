@@ -1,10 +1,13 @@
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 from fastmcp import FastMCP
 
 # Racine du workspace mémoire (fichiers + vector store)
-WORKSPACE_ROOT = os.getenv("LEION_WORKSPACE_ROOT", "D:/claude_code/leion_workspace")
+# Par défaut, on reste dans un dossier local au repo pour éviter tout chemin absolu machine-spécifique.
+DEFAULT_WORKSPACE_ROOT = str(Path(__file__).resolve().parents[1] / ".leion_workspace")
+WORKSPACE_ROOT = os.getenv("LEION_WORKSPACE_ROOT", DEFAULT_WORKSPACE_ROOT)
 
 MEMORY_BANK = os.path.join(WORKSPACE_ROOT, "memory_bank")
 VECTOR_STORE_ROOT = os.path.join(WORKSPACE_ROOT, "vector_store")
