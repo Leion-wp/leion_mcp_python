@@ -126,6 +126,53 @@ def _require_mutations() -> Optional[Dict[str, Any]]:
     )
 
 
+def _sanitize_workflow(workflow: Dict[str, Any]) -> Dict[str, Any]:
+    """Project a workflow onto n8n's writable public-API schema."""
+    writable = {
+        key: workflow[key]
+        for key in ("name", "nodes", "connections", "settings", "staticData")
+        if key in workflow
+    }
+
+    nodes = writable.get("nodes")
+    if isinstance(nodes, list):
+        clean_nodes = []
+        for node in nodes:
+            if not isinstance(node, dict):
+                clean_nodes.append(node)
+                continue
+            clean_nodes.append(
+                {
+                    key: value
+                    for key, value in node.items()
+                    if key not in {"createdAt", "updatedAt"}
+                }
+            )
+        writable["nodes"] = clean_nodes
+
+    return writable
+
+
+def _validate_workflow_payload(workflow: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    missing = [
+        key
+        for key in ("name", "nodes", "connections", "settings")
+        if key not in workflow
+    ]
+    if missing:
+        return _error(
+            "N8N_WORKFLOW_INVALID",
+            f"workflow is missing required fields: {', '.join(missing)}",
+        )
+    if not isinstance(workflow.get("nodes"), list):
+        return _error("N8N_WORKFLOW_INVALID", "workflow.nodes must be an array")
+    if not isinstance(workflow.get("connections"), dict):
+        return _error("N8N_WORKFLOW_INVALID", "workflow.connections must be an object")
+    if not isinstance(workflow.get("settings"), dict):
+        return _error("N8N_WORKFLOW_INVALID", "workflow.settings must be an object")
+    return None
+
+
 def register_n8n_tools(server: FastMCP) -> None:
     """Register a bounded adapter around n8n's public API.
 
@@ -189,12 +236,13 @@ def register_n8n_tools(server: FastMCP) -> None:
         gate = _require_mutations()
         if gate:
             return gate
-        if not isinstance(workflow, dict) or not workflow.get("name"):
-            return _error(
-                "N8N_WORKFLOW_INVALID",
-                "workflow must be an object containing at least a name.",
-            )
-        return _request("POST", "/workflows", payload=workflow)
+        if not isinstance(workflow, dict):
+            return _error("N8N_WORKFLOW_INVALID", "workflow must be an object")
+        payload = _sanitize_workflow(workflow)
+        invalid = _validate_workflow_payload(payload)
+        if invalid:
+            return invalid
+        return _request("POST", "/workflows", payload=payload)
 
     @server.tool()
     def n8n_update_workflow(
@@ -210,7 +258,11 @@ def register_n8n_tools(server: FastMCP) -> None:
             return _error("N8N_WORKFLOW_ID_REQUIRED", "workflow_id is required")
         if not isinstance(workflow, dict):
             return _error("N8N_WORKFLOW_INVALID", "workflow must be an object")
-        return _request("PUT", f"/workflows/{value}", payload=workflow)
+        payload = _sanitize_workflow(workflow)
+        invalid = _validate_workflow_payload(payload)
+        if invalid:
+            return invalid
+        return _request("PUT", f"/workflows/{value}", payload=payload)
 
     @server.tool()
     def n8n_activate_workflow(workflow_id: str) -> Dict[str, Any]:
