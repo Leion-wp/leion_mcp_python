@@ -53,10 +53,18 @@ def wait_for_port(port: int, timeout: float = HEALTH_TIMEOUT_SECONDS) -> bool:
     return False
 
 
-def selected_specs(config: Dict[str, Any], profile: str) -> List[Dict[str, Any]]:
+def selected_specs(
+    config: Dict[str, Any],
+    profile: str,
+    excluded: Optional[set[str]] = None,
+) -> List[Dict[str, Any]]:
+    excluded = excluded or set()
     selected = []
     for raw in config["servers"]:
         if not isinstance(raw, dict):
+            continue
+        name = str(raw.get("name") or "")
+        if name in excluded:
             continue
         profiles = raw.get("profiles") or []
         if profile in profiles:
@@ -196,6 +204,12 @@ def main() -> int:
         action="store_true",
         help="Do not restart managed servers that exit.",
     )
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help="Exclude a server by name. May be provided more than once.",
+    )
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -203,7 +217,7 @@ def main() -> int:
         print_catalog(config)
         return 0
 
-    specs = selected_specs(config, args.profile)
+    specs = selected_specs(config, args.profile, set(args.exclude))
     if not specs:
         print(f"No servers are configured for profile '{args.profile}'.")
         return 2
