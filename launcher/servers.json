@@ -1,0 +1,20 @@
+{
+  "servers": [
+    {"name": "fs", "module": "servers.mcp_fs", "port": 7001, "profiles": ["dev", "full"], "restart": true},
+    {"name": "git", "module": "servers.mcp_git_project", "port": 7002, "profiles": ["dev", "full"], "restart": true},
+    {"name": "workflows", "module": "servers.mcp_workflows", "port": 7003, "profiles": ["dev", "revenue", "full"], "restart": true},
+    {"name": "memory", "module": "servers.mcp_memory", "port": 7004, "profiles": ["dev", "revenue", "full"], "restart": true},
+    {"name": "agents", "module": "servers.mcp_agents", "port": 7005, "profiles": ["dev", "full"], "restart": true},
+    {"name": "integrations", "module": "servers.mcp_integrations", "port": 7006, "profiles": ["revenue", "full"], "restart": true},
+    {"name": "dev-quality", "module": "servers.mcp_dev_quality", "port": 7007, "profiles": ["dev", "full"], "restart": true},
+    {"name": "business", "module": "servers.mcp_business", "port": 7008, "profiles": ["revenue", "full"], "restart": true},
+    {"name": "ui", "module": "servers.mcp_ui", "port": 7009, "profiles": ["full"], "restart": true},
+    {"name": "control-center", "module": "servers.mcp_control_center", "port": 7010, "profiles": ["full"], "restart": true},
+    {"name": "runtime", "module": "servers.mcp_runtime", "port": 7011, "profiles": ["core", "dev", "revenue", "full"], "restart": true},
+    {"name": "wordpress", "module": "servers.mcp_wp", "port": 7012, "profiles": ["full"], "restart": true},
+    {"name": "n8n", "module": "servers.mcp_n8n", "port": 7013, "profiles": ["core", "dev", "revenue", "full"], "restart": true},
+    {"name": "revenue", "module": "servers.mcp_revenue", "port": 7014, "profiles": ["revenue", "full"], "restart": true},
+    {"name": "development", "module": "servers.mcp_development", "port": 7015, "profiles": ["dev", "full"], "restart": true},
+    {"name": "router", "module": "servers.mcp_router", "port": 7000, "profiles": ["core", "dev", "revenue", "full"], "restart": true}
+  ]
+}
