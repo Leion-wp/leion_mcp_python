@@ -41,10 +41,10 @@ DEFAULT_BACKENDS = {
 # You can tune these over time.
 ROUTING_RULES: List[Tuple[str, List[str]]] = [
     ("runtime", [
-        r"\\bruntime\\b", r"\\bcli\\b", r"\\brun[_ ]?status\\b", r"\\brun[_ ]?logs\\b",
-        r"\\brun[_ ]?list\\b", r"\\bvalidate[_ ]?pipeline\\b", r"\\bcancel[_ ]?pipeline\\b",
-        r"\\bresume[_ ]?pipeline\\b", r"\\bstop[_ ]?pipeline\\b", r"\\bcorrelation[_ ]?id\\b",
-        r"\\bdetached run\\b", r"\\bleion runtime\\b",
+        r"\bruntime\b", r"\bcli\b", r"\brun[_ ]?status\b", r"\brun[_ ]?logs\b",
+        r"\brun[_ ]?list\b", r"\bvalidate[_ ]?pipeline\b", r"\bcancel[_ ]?pipeline\b",
+        r"\bresume[_ ]?pipeline\b", r"\bstop[_ ]?pipeline\b", r"\bcorrelation[_ ]?id\b",
+        r"\bdetached run\b", r"\bleion runtime\b",
     ]),
     ("fs", [
         r"\bfile\b", r"\bfichier\b", r"\bfs_", r"\bread\b", r"\bwrite\b", r"\bpatch\b",
