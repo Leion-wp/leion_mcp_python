@@ -45,7 +45,7 @@ try {
         $SupervisorStderr = Join-Path $LogDir "supervisor.stderr.log"
 
         $Supervisor = Start-Process -FilePath $Python `
-            -ArgumentList @($Launcher, "--profile", $Profile) `
+            -ArgumentList @($Launcher, "--profile", $Profile, "--exclude", "router") `
             -WorkingDirectory $RepoRoot `
             -RedirectStandardOutput $SupervisorStdout `
             -RedirectStandardError $SupervisorStderr `
