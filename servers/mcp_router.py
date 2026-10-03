@@ -33,6 +33,9 @@ DEFAULT_BACKENDS = {
     "cc": os.environ.get("MCP_CONTROL_CENTER_URL", "http://localhost:7010"),
     "runtime": os.environ.get("MCP_RUNTIME_URL", "http://localhost:7011"),
     "wp": os.environ.get("MCP_WP_URL", "http://localhost:7012"),
+    "n8n": os.environ.get("MCP_N8N_URL", "http://localhost:7013"),
+    "revenue": os.environ.get("MCP_REVENUE_URL", "http://localhost:7014"),
+    "development": os.environ.get("MCP_DEVELOPMENT_URL", "http://localhost:7015"),
 
 }
 
@@ -40,6 +43,16 @@ DEFAULT_BACKENDS = {
 # Keyword routing rules (fast, deterministic). 80% of traffic should land here.
 # You can tune these over time.
 ROUTING_RULES: List[Tuple[str, List[str]]] = [
+    ("revenue", [
+        r"\brevenue\b", r"\bprospect\b", r"\bcampaign\b", r"\bsales?\b",
+        r"\boffer\b", r"\bcustomer\b", r"\bclient\b", r"\bmonetiz",
+    ]),
+    ("n8n", [
+        r"\bn8n\b", r"\bworkflow automation\b", r"\bautomation workflow\b",
+    ]),
+    ("development", [
+        r"\bdevelopment mcp\b", r"\bdev mcp\b", r"\bcode worker\b",
+    ]),
     ("runtime", [
         r"\bruntime\b", r"\bcli\b", r"\brun[_ ]?status\b", r"\brun[_ ]?logs\b",
         r"\brun[_ ]?list\b", r"\bvalidate[_ ]?pipeline\b", r"\bcancel[_ ]?pipeline\b",
