@@ -2,13 +2,14 @@ from fastmcp import FastMCP
 from utils.config import load_env
 from utils.logger import setup_logger
 
+load_env()
+
 from tools.business_launcher_tools import register_business_launcher_tools
 from tools.business_assets_tools import register_business_assets_tools
 from tools.composio_business_tools import register_composio_business_tools
 from tools.asset_creator_tools import register_asset_creator_tools
 
 
-load_env()
 setup_logger()
 
 server = FastMCP(

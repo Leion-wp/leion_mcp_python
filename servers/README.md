@@ -59,6 +59,13 @@ terminal manually:
 .\start_leion.ps1 -Profile full
 ```
 
+`start_leion.ps1` also forwards one or more exclusions to the supervisor. For
+example, while the WordPress adapter is being hardened for public routing:
+
+```powershell
+.\start_leion.ps1 -Profile full -Exclude wordpress
+```
+
 Equivalent Python command:
 
 ```powershell

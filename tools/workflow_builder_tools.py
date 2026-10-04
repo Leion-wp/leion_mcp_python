@@ -1,16 +1,15 @@
 import json
-from pathlib import Path
 from typing import Any, Dict
 
 from fastmcp import FastMCP
 
+from .local_workflow_runner import definitions_root, validate_definition, workflow_path
 
-WORKFLOWS_DEFINITIONS_DIR = Path("D:/claude_code/leion-autobuilder/workflows/definitions")
 
-
-def _ensure_workflows_dir() -> Path:
-    WORKFLOWS_DEFINITIONS_DIR.mkdir(parents=True, exist_ok=True)
-    return WORKFLOWS_DEFINITIONS_DIR
+def _ensure_workflows_dir():
+    root = definitions_root()
+    root.mkdir(parents=True, exist_ok=True)
+    return root
 
 
 def register_workflow_builder_tools(server: FastMCP):
@@ -23,21 +22,28 @@ def register_workflow_builder_tools(server: FastMCP):
         - workflow_id: filename without .json
         - definition: full workflow JSON (nodes, connections, metadata, etc.)
         """
-        root = _ensure_workflows_dir()
-        path = root / f"{workflow_id}.json"
+        validation = validate_definition(definition)
+        if not validation["ok"]:
+            return validation
         try:
-            path.write_text(json.dumps(definition, indent=2, ensure_ascii=False), encoding="utf-8")
+            root = _ensure_workflows_dir()
+            path = workflow_path(workflow_id)
+            temporary = path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(definition, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+            temporary.replace(path)
             return {"ok": True, "path": str(path)}
-        except Exception as e:
-            return {"ok": False, "error": str(e), "path": str(path)}
+        except (OSError, ValueError) as exc:
+            return {"ok": False, "error": str(exc)}
 
     @server.tool()
     def workflow_list_definitions():
         """
         List workflow definition files available in the definitions folder.
         """
-        root = _ensure_workflows_dir()
+        root = definitions_root()
         items: list[dict[str, Any]] = []
+        if not root.exists():
+            return {"root": str(root), "workflows": items}
         for p in root.glob('*.json'):
             items.append({"id": p.stem, "path": str(p)})
         return {"root": str(root), "workflows": items}
@@ -47,12 +53,17 @@ def register_workflow_builder_tools(server: FastMCP):
         """
         Read a workflow JSON definition by ID.
         """
-        root = _ensure_workflows_dir()
-        path = root / f"{workflow_id}.json"
+        try:
+            path = workflow_path(workflow_id)
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
         if not path.exists():
             return {"ok": False, "error": "workflow definition not found", "path": str(path)}
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
+            validation = validate_definition(data)
+            if not validation["ok"]:
+                return {**validation, "path": str(path)}
             return {"ok": True, "path": str(path), "definition": data}
-        except Exception as e:
-            return {"ok": False, "error": str(e), "path": str(path)}
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"ok": False, "error": str(exc), "path": str(path)}

@@ -166,9 +166,10 @@ services:
     volumes:
       - D:/claude_code/wp:/workspace
     environment:
-      WP_BASE_URL: https://soulskeeper.fr
-      WP_USER: MatthieuSchwaig
-      WP_APP_PASSWORD: vmlDvRKPIrg1cGvawPaaQauF
+      # Credentials are supplied from an untracked .env file or host environment.
+      WP_BASE_URL: ${WP_BASE_URL:-}
+      WP_USER: ${WP_USER:-}
+      WP_APP_PASSWORD: ${WP_APP_PASSWORD:-}
 
 
 # Phase D.0: Separate network (2-stack architecture)
