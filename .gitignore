@@ -33,6 +33,7 @@ ENV/
 
 # Logs and runtime files
 logs/
+.leion_workspace/
 *.log
 *.pid
 *.out

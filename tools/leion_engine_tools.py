@@ -561,7 +561,7 @@ def register_leion_engine_tools(server: FastMCP):
     # ==================== BUDGET TRACKING ====================
 
     @server.tool()
-    async def leion_engine_get_budget(self) -> Dict[str, Any]:
+    async def leion_engine_get_budget() -> Dict[str, Any]:
         """Get global budget status and usage
         
         Cost monitoring across all workflows.
