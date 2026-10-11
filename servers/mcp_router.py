@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ setup_logger()
 # In docker-compose, use service DNS names (mcp-fs, mcp-git, etc.).
 # Locally, you can export MCP_*_URL env vars.
 DEFAULT_BACKENDS = {
+    "excalidraw": "https://mcp.excalidraw.com",
     "fs": os.environ.get("MCP_FS_URL", "http://localhost:7001"),
     "git": os.environ.get("MCP_GIT_URL", "http://localhost:7002"),
     "workflows": os.environ.get("MCP_WORKFLOWS_URL", "http://localhost:7003"),
@@ -43,6 +45,7 @@ DEFAULT_BACKENDS = {
 # Keyword routing rules (fast, deterministic). 80% of traffic should land here.
 # You can tune these over time.
 ROUTING_RULES: List[Tuple[str, List[str]]] = [
+    ("excalidraw", [r"\bexcalidraw\b"]),
     ("revenue", [
         r"\brevenue\b", r"\bprospect\b", r"\bcampaign\b", r"\bsales?\b",
         r"\boffer\b", r"\bcustomer\b", r"\bclient\b", r"\bmonetiz",
@@ -109,6 +112,42 @@ class ToolInfo:
     name: str
     description: str
     input_schema: dict
+    metadata: Optional[dict] = None
+    annotations: Optional[dict] = None
+    output_schema: Optional[dict] = None
+
+
+EXCALIDRAW_TOOLS = frozenset({"read_me", "create_view", "save_checkpoint", "read_checkpoint"})
+
+
+def _json_model(value: Any) -> Any:
+    """Keep protocol content block types and aliases rather than stringifying them."""
+    return value.model_dump(by_alias=True, exclude_none=True, mode="json") if hasattr(value, "model_dump") else value
+
+
+def _tool_field(tool: Any, snake: str, camel: str, fallback: Any = None) -> Any:
+    return getattr(tool, snake) if hasattr(tool, snake) else getattr(tool, camel, fallback)
+
+
+def _excalidraw_arguments(tool: str, args: Dict[str, Any]) -> None:
+    if tool not in EXCALIDRAW_TOOLS:
+        raise ValueError("EXCALIDRAW_TOOL_NOT_ALLOWED")
+    keys = {"read_me": set(), "create_view": {"elements"}, "save_checkpoint": {"id", "data"}, "read_checkpoint": {"id"}}[tool]
+    if not isinstance(args, dict) or set(args) != keys:
+        raise ValueError("EXCALIDRAW_ARGUMENTS_INVALID")
+    if "id" in args and (not isinstance(args["id"], str) or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}", args["id"])):
+        raise ValueError("EXCALIDRAW_CHECKPOINT_INVALID")
+    if tool == "create_view":
+        elements = args["elements"]
+        if not isinstance(elements, str) or len(elements.encode("utf-8")) > 524288:
+            raise ValueError("EXCALIDRAW_ELEMENTS_INVALID")
+        parsed = json.loads(elements)
+        if not isinstance(parsed, list) or len(parsed) > 2000 or any(not isinstance(item, dict) for item in parsed):
+            raise ValueError("EXCALIDRAW_ELEMENTS_INVALID")
+    if tool == "save_checkpoint":
+        data = args["data"]
+        if not isinstance(data, str) or len(data.encode("utf-8")) > 524288 or not isinstance(json.loads(data), dict):
+            raise ValueError("EXCALIDRAW_CHECKPOINT_INVALID")
 
 
 server = FastMCP(
@@ -150,12 +189,17 @@ async def _list_tools(backend: str) -> List[ToolInfo]:
 
     out: List[ToolInfo] = []
     for t in tools:
+        if backend == "excalidraw" and t.name not in EXCALIDRAW_TOOLS:
+            continue
         # t is mcp.types.Tool
         out.append(
             ToolInfo(
                 name=t.name,
                 description=(t.description or ""),
-                input_schema=(t.inputSchema or {}),
+                input_schema=(_tool_field(t, "input_schema", "inputSchema", {}) or {}),
+                metadata=getattr(t, "meta", None),
+                annotations=_json_model(getattr(t, "annotations", None)),
+                output_schema=_tool_field(t, "output_schema", "outputSchema"),
             )
         )
     return out
@@ -165,6 +209,9 @@ async def _call_tool(backend: str, tool: str, args: Optional[Dict[str, Any]] = N
     url = DEFAULT_BACKENDS.get(backend)
     if not url:
         raise ValueError(f"Unknown backend: {backend}")
+
+    if backend == "excalidraw":
+        _excalidraw_arguments(tool, args or {})
 
     client = Client(url)
     async with client:
@@ -182,6 +229,12 @@ async def _call_tool(backend: str, tool: str, args: Optional[Dict[str, Any]] = N
             for c in (getattr(result, "content", None) or [])
         ],
         "meta": getattr(result, "meta", None),
+        "mcp_result": {
+            "content": [_json_model(c) for c in (getattr(result, "content", None) or [])],
+            **({"structuredContent": result.structured_content} if getattr(result, "structured_content", None) is not None else {}),
+            **({"_meta": result.meta} if getattr(result, "meta", None) is not None else {}),
+            "isError": bool(getattr(result, "is_error", False)),
+        },
     }
 
 
@@ -225,6 +278,9 @@ async def router_list_tools(query: str, preferred: Optional[str] = None) -> Dict
                 "name": t.name,
                 "description": t.description,
                 "input_schema": t.input_schema,
+                "_meta": t.metadata,
+                "annotations": {**(t.annotations or {}), "readOnlyHint": False} if backend == "excalidraw" and t.name in {"create_view", "save_checkpoint"} else t.annotations,
+                "outputSchema": t.output_schema,
             }
             for t in tools
         ],
